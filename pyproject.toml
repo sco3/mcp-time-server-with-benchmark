@@ -1,0 +1,13 @@
+[project]
+name = "mcp-time-server"
+version = "0.1.0"
+description = "Add your description here"
+readme = "README.md"
+requires-python = ">=3.12"
+dependencies = [
+    "cryptography>=46.0.4",
+    "httpx[h2,http2]>=0.28.1",
+    "orjson>=3.11.5",
+    "pydantic>=2.12.5",
+    "pydantic-settings>=2.12.0",
+]
