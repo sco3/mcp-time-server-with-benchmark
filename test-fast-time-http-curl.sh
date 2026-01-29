@@ -23,11 +23,11 @@ curl -v -D headers.txt  -N "$URL" "${HEADERS[@]}" -d "$INIT"
 printf "\n---\n"
 grep -
 
-curl -N "$URL" "${HEADERS[@]}" -d "$NOTIFY"
-printf "\n---\n"
-exit
-curl -N "$URL" "${HEADERS[@]}" -d "$LIST"
+curl  "$URL" "${HEADERS[@]}" -d "$NOTIFY"
 printf "\n---\n"
 
-curl -N "$URL" "${HEADERS[@]}" -d "$TOOL_CALL"
+curl  "$URL" "${HEADERS[@]}" -d "$LIST"
+printf "\n---\n"
+
+curl  "$URL" "${HEADERS[@]}" -d "$TOOL_CALL"
 printf "\n---\n"

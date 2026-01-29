@@ -3,6 +3,10 @@ name = "mcp-time-server"
 version = "0.1.0"
 edition = "2021"
 
+[[bin]]
+name = "bench"
+path = "src/bin/bench/main.rs"
+
 [dependencies]
 axum = "0.7.5"
 tokio = { version = "1.37.0", features = ["full"] }
@@ -13,3 +17,6 @@ toml = "0.9.11"
 libc = "0.2"
 indexmap = "2.7.0"
 clap = { version = "4.5.55", features = ["derive"] }
+anyhow = "1.0"
+tracing = "0.1"
+tracing-subscriber = { version = "0.3", features = ["env-filter"] }

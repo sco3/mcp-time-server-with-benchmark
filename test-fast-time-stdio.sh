@@ -19,7 +19,7 @@ TEMPLATE='{"jsonrpc": "2.0","id": REPLACE_ID,"method": "tools/call","params": {"
 	sleep 0.2
 	echo "$LIST"
 	sleep 0.2
-	for i in {4..1000}; do
+	for i in {4..100}; do
 		echo "${TEMPLATE/REPLACE_ID/$i}"
 	done
 ) | "${EXE[@]}"

@@ -1,31 +1,48 @@
-use serde::Deserialize;
+use anyhow::{Context, Result};
+use serde::{Deserialize, Serialize};
 use serde_json::Value;
+use std::path::Path;
 
-#[derive(Deserialize)]
+#[derive(Debug, Deserialize, Serialize, Clone)]
 pub struct BenchConfig {
+    #[serde(default = "default_timeout")]
+    pub timeout_seconds: u64,
+    
+    #[serde(default)]
     pub steps: Vec<Step>,
 }
 
-#[derive(Deserialize)]
+fn default_timeout() -> u64 {
+    60
+}
+
+#[derive(Debug, Deserialize, Serialize, Clone)]
 pub struct Step {
     pub name: String,
-    pub payload: Value,
-    #[serde(default = "default_bench")]
+    
+    #[serde(default)]
     pub bench: bool,
-    #[serde(default)]
-    pub concurrency: Option<usize>,
-    #[serde(default)]
-    pub tasks: Option<usize>,
+    
+    #[serde(default = "default_tasks")]
+    pub tasks: usize,
+    
+    pub payload: Value,
 }
 
-fn default_bench() -> bool {
-    true
+fn default_tasks() -> usize {
+    1
 }
 
-#[derive(Deserialize, Clone)]
-pub struct AppCommand {
-    pub bin: String,
-    pub args: Vec<String>,
+impl BenchConfig {
+    pub fn from_file<P: AsRef<Path>>(path: P) -> Result<Self> {
+        let content = std::fs::read_to_string(path.as_ref())
+            .context("Failed to read config file")?;
+        
+        let config: BenchConfig = toml::from_str(&content)
+            .context("Failed to parse TOML config")?;
+        
+        Ok(config)
+    }
 }
 
 // Made with Bob

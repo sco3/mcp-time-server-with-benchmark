@@ -5,7 +5,7 @@ payload = { jsonrpc = "2.0", id = 1, method = "initialize", params = { protocolV
 
 [[steps]]
 name = "Initialized Notification"
-bench = true
+bench = false
 payload = { jsonrpc = "2.0", method = "notifications/initialized" }
 
 # The actual server-specific calls
@@ -17,6 +17,5 @@ payload = { jsonrpc = "2.0", id = 2, method = "tools/list" }
 [[steps]]
 name = "System Time Call"
 bench = true
-concurrency = 1
-tasks = 8000
+tasks = 100
 payload = { jsonrpc = "2.0", id = 3, method = "tools/call", params = { name = "get_system_time", arguments = { timezone = "UTC" } } }
