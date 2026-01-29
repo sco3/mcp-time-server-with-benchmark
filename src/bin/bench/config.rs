@@ -13,8 +13,6 @@ pub struct Step {
     #[serde(default = "default_bench")]
     pub bench: bool,
     #[serde(default)]
-    pub concurrency: Option<usize>,
-    #[serde(default)]
     pub tasks: Option<usize>,
 }
 
