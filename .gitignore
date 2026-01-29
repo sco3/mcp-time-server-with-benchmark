@@ -2,3 +2,4 @@ mcpgateway
 wrapper.py
 *.log
 target
+headers.txt

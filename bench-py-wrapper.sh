@@ -8,8 +8,9 @@ time ./target/release/bench \
 	bench.toml \
 	-p \
 	-i ${ITERS:=4} \
+	--log-file bench-py-wrapper.bench.log \
 	-- \
 	uv \
-	--project $HOME/prj/mcp-context-forge run -m mcpgateway.wrapper --url "http://localhost:3000/mcp" \
+	--project $HOME/prj/mcp-context-forge run -m mcpgateway.wrapper --url "http://localhost:8844/mcp" \
 	--auth "$AUTH" \
-	--log-level off
+	--log-level debug
