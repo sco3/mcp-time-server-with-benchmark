@@ -13,3 +13,4 @@ toml = "0.9.11"
 libc = "0.2"
 indexmap = "2.7.0"
 clap = { version = "4.5.55", features = ["derive"] }
+crossbeam-channel = "0.5"
