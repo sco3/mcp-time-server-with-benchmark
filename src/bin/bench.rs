@@ -9,16 +9,20 @@ use std::io::BufWriter;
 use std::{fs, thread};
 use std::f64;
 use serde_json; // Import serde_json for JSON serialization
+use statistical::{median, standard_deviation};
 
 #[derive(Parser, Debug)]
 #[command(author, version, about, long_about = None)]
 struct Args {
-    /// Path to the MCP server executable
-    #[arg(short, long)]
-    server: String,
     /// Path to a log file for detailed request/response logging
     #[arg(long)]
     log_file: Option<String>,
+    /// Path to the MCP server executable
+    #[arg(short, long)]
+    server: String,
+    /// Arguments to pass to the server executable (everything after --server <exe>)
+    #[arg(trailing_var_arg = true, allow_hyphen_values = true)]
+    server_args: Vec<String>,
 }
 
 #[derive(Debug, Deserialize)]
@@ -55,22 +59,8 @@ struct LogEntry {
     message: Option<String>,
 }
 
-// Helper function to calculate median
-fn calculate_median(data: &mut Vec<f64>) -> f64 {
-    if data.is_empty() {
-        return 0.0;
-    }
-    data.sort_by(|a, b| a.partial_cmp(b).unwrap());
-    let mid = data.len() / 2;
-    if data.len() % 2 == 0 {
-        (data[mid - 1] + data[mid]) / 2.0
-    } else {
-        data[mid]
-    }
-}
-
 // Helper function to calculate a percentile
-fn calculate_percentile(data: &mut Vec<f64>, percentile: f64) -> f64 {
+fn calculate_percentile(data: &mut [f64], percentile: f64) -> f64 {
     if data.is_empty() {
         return 0.0;
     }
@@ -86,16 +76,6 @@ fn calculate_percentile(data: &mut Vec<f64>, percentile: f64) -> f64 {
     }
 }
 
-// Helper function to calculate standard deviation
-fn calculate_std_dev(data: &[f64]) -> f64 {
-    if data.len() < 2 {
-        return 0.0;
-    }
-    let mean = data.iter().sum::<f64>() / data.len() as f64;
-    let variance = data.iter().map(|&x| (x - mean).powi(2)).sum::<f64>() / (data.len() as f64 - 1.0);
-    variance.sqrt()
-}
-
 
 fn main() -> std::io::Result<()> {
     let args = Args::parse();
@@ -104,6 +84,7 @@ fn main() -> std::io::Result<()> {
     let bench_config: BenchConfig = toml::from_str(&toml_content).unwrap();
 
     let mut server = Command::new(&args.server)
+        .args(&args.server_args)
         .stdin(Stdio::piped())
         .stdout(Stdio::piped())
         .stderr(Stdio::null()) // Redirect stderr to null to suppress server's own logs
@@ -133,6 +114,7 @@ fn main() -> std::io::Result<()> {
     for step in bench_config.steps {
         let mut durations: Vec<f64> = Vec::new();
         let num_tasks = step.tasks.unwrap_or(1);
+        let step_start_time = Instant::now();
         for _ in 0..num_tasks {
             let mut payload = step.payload.clone();
             if payload.get("id").is_some() {
@@ -222,14 +204,27 @@ fn main() -> std::io::Result<()> {
 
         // Print stats at the end of each step
         if step.bench && !durations.is_empty() {
+            let step_total_time = step_start_time.elapsed();
+            let total_seconds = step_total_time.as_secs_f64();
+            let rps = num_tasks as f64 / total_seconds;
+            
             let mut sorted_durations = durations.clone(); // Clone for sorting
-            let median = calculate_median(&mut sorted_durations);
-            let p99 = calculate_percentile(&mut sorted_durations, 99.0);
-            let std_dev = calculate_std_dev(&durations);
-            println!(
-                "Step '{}' stats: Median: {:.3}ms, P99: {:.3}ms, StdDev: {:.3}ms",
-                step.name, median, p99, std_dev
-            );
+            
+            if durations.len() == 1 {
+                // For single data point, median and p99 are the same value, std_dev is 0
+                println!(
+                    "Step '{}' stats: Median: {:.3}ms, P99: {:.3}ms, StdDev: 0.000ms, RPS: {:.2} (single sample)",
+                    step.name, durations[0], durations[0], rps
+                );
+            } else {
+                let median_val = median(&durations);
+                let p99 = calculate_percentile(&mut sorted_durations, 99.0);
+                let std_dev = standard_deviation(&durations, None);
+                println!(
+                    "Step '{}' stats: Median: {:.3}ms, P99: {:.3}ms, StdDev: {:.3}ms, RPS: {:.2}",
+                    step.name, median_val, p99, std_dev, rps
+                );
+            }
         }
     }
 
