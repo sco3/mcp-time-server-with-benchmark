@@ -126,11 +126,7 @@ async fn mcp_handler(Json(request_value): Json<Value>) -> Response {
         Ok(JsonRpcRequest::Notification(req)) => handle_notification(req).await,
         Err(_) => {
             let id = request_value.get("id").cloned().unwrap_or(Value::Null);
-            let error = JsonRpcErrorResponse::new(
-                id,
-                -32700,
-                "Parse error".to_string(),
-            );
+            let error = JsonRpcErrorResponse::new(id, -32700, "Parse error".to_string());
             create_jsonrpc_response(serde_json::to_value(error).unwrap())
         }
     }
@@ -216,14 +212,18 @@ async fn handle_request_with_params(req: JsonRpcRequestWithParams) -> Response {
                             serde_json::from_value(tool_params.arguments);
                         match args {
                             Ok(args) => {
-                                if !args.timezone.is_empty() && args.timezone.to_uppercase() != "UTC" {
+                                if !args.timezone.is_empty()
+                                    && args.timezone.to_uppercase() != "UTC"
+                                {
                                     let error = JsonRpcErrorResponse::new(
                                         req.id.clone(),
                                         -32602,
                                         "Invalid params: only 'UTC' timezone is supported"
                                             .to_string(),
                                     );
-                                    return create_jsonrpc_response(serde_json::to_value(error).unwrap());
+                                    return create_jsonrpc_response(
+                                        serde_json::to_value(error).unwrap(),
+                                    );
                                 }
 
                                 let now: DateTime<Utc> = Utc::now();
@@ -248,8 +248,7 @@ async fn handle_request_with_params(req: JsonRpcRequestWithParams) -> Response {
                                 let error = JsonRpcErrorResponse::new(
                                     req.id,
                                     -32602,
-                                    "Invalid params for get_system_time"
-                                        .to_string(),
+                                    "Invalid params for get_system_time".to_string(),
                                 );
                                 create_jsonrpc_response(serde_json::to_value(error).unwrap())
                             }
@@ -266,18 +265,15 @@ async fn handle_request_with_params(req: JsonRpcRequestWithParams) -> Response {
                 Err(_) => {
                     let error = JsonRpcErrorResponse::new(
                         req.id,
-                                            -32602,
-                                            "Invalid params for tools/call".to_string(),
-                                        );
-                                        create_jsonrpc_response(serde_json::to_value(error).unwrap())
-                                    }            }
+                        -32602,
+                        "Invalid params for tools/call".to_string(),
+                    );
+                    create_jsonrpc_response(serde_json::to_value(error).unwrap())
+                }
+            }
         }
         _ => {
-            let error = JsonRpcErrorResponse::new(
-                req.id,
-                -32601,
-                "Method not found".to_string(),
-            );
+            let error = JsonRpcErrorResponse::new(req.id, -32601, "Method not found".to_string());
             create_jsonrpc_response(serde_json::to_value(error).unwrap())
         }
     }
@@ -316,13 +312,10 @@ async fn handle_request_without_params(req: JsonRpcRequestWithoutParams) -> Resp
             create_jsonrpc_response(serde_json::to_value(response).unwrap())
         }
         _ => {
-            let error = JsonRpcErrorResponse::new(
-                req.id,
-                            -32601,
-                            "Method not found".to_string(),
-                        );
-                        create_jsonrpc_response(serde_json::to_value(error).unwrap())
-                    }    }
+            let error = JsonRpcErrorResponse::new(req.id, -32601, "Method not found".to_string());
+            create_jsonrpc_response(serde_json::to_value(error).unwrap())
+        }
+    }
 }
 
 async fn handle_notification(_req: JsonRpcNotification) -> Response {
@@ -334,7 +327,6 @@ async fn handle_notification(_req: JsonRpcNotification) -> Response {
         .body(Body::from("{}"))
         .unwrap()
 }
-
 
 // --- Main Function ---
 

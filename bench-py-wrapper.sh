@@ -4,7 +4,7 @@ set -ueo pipefail
 
 source ./token-from-file.sh
 
-time ./target/release/bench \
+time ./target/release/bench8 \
 	--log-file bench-py-wrapper.log \
 	--server uv \
 	--project $HOME/prj/mcp-context-forge run -m mcpgateway.wrapper \

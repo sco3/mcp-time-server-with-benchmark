@@ -1,5 +1,7 @@
+.bob
 mcpgateway
 wrapper.py
 *.log
 target
 headers.txt
+*.svg
