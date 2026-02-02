@@ -1,7 +1,7 @@
 use clap::{ArgAction, Parser};
 use crossbeam_channel::{unbounded, Receiver, Sender};
 use serde::{Deserialize, Serialize};
- // Import serde_json for JSON serialization
+// Import serde_json for JSON serialization
 use statistical::{median, standard_deviation};
 use std::f64;
 use std::fs::File;
@@ -69,7 +69,7 @@ fn calculate_percentile(data: &mut [f64], percentile: f64) -> f64 {
     data.sort_by(|a, b| a.partial_cmp(b).unwrap());
     let rank = percentile / 100.0 * (data.len() as f64 - 1.0);
     let lower_index = rank.floor() as usize;
-    let upper_index = rank.ceil() as usize;
+    let upper_index = rank.ceil().abs() as usize;
     let weight = rank - lower_index as f64;
     if lower_index == upper_index {
         data[lower_index]
