@@ -1,6 +1,6 @@
-use clap::Parser;
+use clap::{ArgAction, Parser};
 use hdrhistogram::Histogram;
-use serde::{Deserialize, Serialize};
+use serde::Deserialize;
 use std::collections::HashMap;
 use std::fs;
 use std::process::Stdio;
@@ -13,8 +13,9 @@ use tokio::sync::Mutex;
 #[derive(Parser, Debug)]
 #[command(author, version, about)]
 struct Args {
-    #[arg(long)]
-    silent: Option<bool>,
+    #[arg(long, action = ArgAction::SetTrue)]
+    silent: bool,
+
     #[arg(long)]
     log_file: Option<String>,
     #[arg(short, long)]
@@ -42,8 +43,12 @@ struct Step {
     payload: serde_json::Value,
 }
 
-fn default_batch() -> usize { 1 }
-fn default_tasks() -> usize { 1 }
+fn default_batch() -> usize {
+    1
+}
+fn default_tasks() -> usize {
+    1
+}
 
 #[tokio::main]
 async fn main() -> anyhow::Result<()> {
@@ -69,7 +74,6 @@ async fn main() -> anyhow::Result<()> {
     // Фоновая задача на чтение ответов
     let pending_clone = Arc::clone(&pending_requests);
     let latencies_clone = Arc::clone(&latencies);
-    let silent = args.silent.unwrap_or(false);
 
     tokio::spawn(async move {
         while let Ok(Some(line)) = reader.next_line().await {
@@ -87,13 +91,15 @@ async fn main() -> anyhow::Result<()> {
     });
 
     for step in config.steps {
-        if !silent { println!("Executing Step: '{}'...", step.name); }
-        
+        if !args.silent {
+            println!("Executing Step: '{}'...", step.name);
+        }
+
         let step_start = Instant::now();
         latencies.lock().await.clear(); // Сброс для каждого шага
-        
+
         let mut sent = 0;
-        let mut current_id_base: u64 = (sent as u64) + 100; // Уникальные ID для шага
+        let current_id_base: u64 = (sent as u64) + 100; // Уникальные ID для шага
 
         while sent < step.tasks {
             // Контроль окна (batch)
@@ -104,11 +110,13 @@ async fn main() -> anyhow::Result<()> {
             let mut msg = step.payload.clone();
             let id = current_id_base + sent as u64;
             if msg.is_object() && step.bench {
-                msg.as_object_mut().unwrap().insert("id".to_string(), id.into());
+                msg.as_object_mut()
+                    .unwrap()
+                    .insert("id".to_string(), id.into());
             }
 
             let payload = serde_json::to_string(&msg)? + "\n";
-            
+
             pending_requests.lock().await.insert(id, Instant::now());
             stdin.write_all(payload.as_bytes()).await?;
             sent += 1;
@@ -135,8 +143,10 @@ async fn main() -> anyhow::Result<()> {
 }
 
 fn print_step_stats(name: &str, latencies: &[Duration], total_time: Duration, tasks: usize) {
-    if latencies.is_empty() { return; }
-    
+    if latencies.is_empty() {
+        return;
+    }
+
     let mut hist = Histogram::<u64>::new_with_bounds(1, 1_000_000_000, 3).unwrap();
     for lat in latencies {
         hist.record(lat.as_nanos() as u64).unwrap();
@@ -145,9 +155,18 @@ fn print_step_stats(name: &str, latencies: &[Duration], total_time: Duration, ta
     let rps = tasks as f64 / total_time.as_secs_f64();
     println!("---");
     println!("Step '{}' stats:", name);
-    println!("  Median: {:.3}ms", hist.value_at_quantile(0.5) as f64 / 1_000_000.0);
-    println!("  P95:    {:.3}ms", hist.value_at_quantile(0.95) as f64 / 1_000_000.0);
-    println!("  P99:    {:.3}ms", hist.value_at_quantile(0.99) as f64 / 1_000_000.0);
+    println!(
+        "  Median: {:.3}ms",
+        hist.value_at_quantile(0.5) as f64 / 1_000_000.0
+    );
+    println!(
+        "  P95:    {:.3}ms",
+        hist.value_at_quantile(0.95) as f64 / 1_000_000.0
+    );
+    println!(
+        "  P99:    {:.3}ms",
+        hist.value_at_quantile(0.99) as f64 / 1_000_000.0
+    );
     println!("  RPS:    {:.2}", rps);
     println!("---");
 }

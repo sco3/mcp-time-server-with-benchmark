@@ -8,7 +8,7 @@ source ./token-from-file.sh
 #exit 
 
 time ./target/release/bench8 \
---silent false\
+	--silent \
 	--server  $HOME/prj/mcp-stdio-wrapper/target/release/mcp_stdio_wrapper  \
 	--url "http://localhost:3000/mcp/" \
 	--auth "$AUTH" \
