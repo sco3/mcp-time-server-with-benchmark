@@ -1,3 +1,4 @@
+#![allow(clippy::cast_precision_loss, clippy::cast_possible_truncation, clippy::cast_sign_loss)]
 use clap::{ArgAction, Parser};
 use crossbeam_channel::{unbounded, Receiver, Sender};
 use serde::{Deserialize, Serialize};
@@ -22,7 +23,7 @@ struct Args {
     server: String,
     /// Arguments to pass to the server executable (everything after --server <exe>)
     #[arg(trailing_var_arg = true, allow_hyphen_values = true)]
-    server_args: Vec<String>,
+    server_params: Vec<String>,
     #[arg(long, action = ArgAction::SetTrue)]
     silent: bool,
 }
@@ -62,6 +63,7 @@ struct LogEntry {
 }
 
 // Helper function to calculate a percentile
+
 fn calculate_percentile(data: &mut [f64], percentile: f64) -> f64 {
     if data.is_empty() {
         return 0.0;
@@ -69,7 +71,9 @@ fn calculate_percentile(data: &mut [f64], percentile: f64) -> f64 {
     data.sort_by(|a, b| a.partial_cmp(b).unwrap());
     let rank = percentile / 100.0 * (data.len() as f64 - 1.0);
     let lower_index = rank.floor() as usize;
-    let upper_index = rank.ceil().abs() as usize;
+
+    let upper_index = rank.ceil().abs() as u64 as usize;
+    #[allow(clippy::cast_precision_loss)]
     let weight = rank - lower_index as f64;
     if lower_index == upper_index {
         data[lower_index]
@@ -77,7 +81,7 @@ fn calculate_percentile(data: &mut [f64], percentile: f64) -> f64 {
         data[lower_index] * (1.0 - weight) + data[upper_index] * weight
     }
 }
-
+#[allow(clippy::too_many_lines)]
 fn main() -> std::io::Result<()> {
     let args = Args::parse();
 
@@ -85,7 +89,7 @@ fn main() -> std::io::Result<()> {
     let bench_config: BenchConfig = toml::from_str(&toml_content).unwrap();
 
     let mut server = Command::new(&args.server)
-        .args(&args.server_args)
+        .args(&args.server_params)
         .stdin(Stdio::piped())
         .stdout(Stdio::piped())
         .stderr(Stdio::null()) // Redirect stderr to null to suppress server's own logs
@@ -139,6 +143,7 @@ fn main() -> std::io::Result<()> {
                             if response.id == Some(request_id_counter) {
                                 let duration = start_time.elapsed();
                                 let micros = duration.as_micros();
+                                #[allow(clippy::cast_precision_loss)]
                                 let ms = micros as f64 / 1000.0;
                                 durations.push(ms); // Collect duration
 

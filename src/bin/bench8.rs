@@ -1,3 +1,8 @@
+#![allow(
+    clippy::cast_precision_loss,
+    clippy::cast_possible_truncation,
+    clippy::cast_sign_loss
+)]
 use clap::{ArgAction, Parser};
 use hdrhistogram::Histogram;
 use serde::Deserialize;
@@ -21,7 +26,7 @@ struct Args {
     #[arg(short, long)]
     server: String,
     #[arg(trailing_var_arg = true, allow_hyphen_values = true)]
-    server_args: Vec<String>,
+    server_params: Vec<String>,
     #[arg(short, long, default_value = "bench.toml")]
     config: String,
 }
@@ -58,7 +63,7 @@ async fn main() -> anyhow::Result<()> {
 
     // Запуск процесса
     let mut child = Command::new(&args.server)
-        .args(&args.server_args)
+        .args(&args.server_params)
         .stdin(Stdio::piped())
         .stdout(Stdio::piped())
         .spawn()?;
