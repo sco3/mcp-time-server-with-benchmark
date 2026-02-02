@@ -227,7 +227,7 @@ async fn handle_request_with_params(req: JsonRpcRequestWithParams) -> Response {
                                 }
 
                                 let now: DateTime<Utc> = Utc::now();
-                                let time_str = now.to_rfc3339();
+                                let time_str = now.format("%Y-%m-%dT%H:%M:%SZ").to_string();
 
                                 let response = JsonRpcResponse {
                                     jsonrpc: "2.0".to_string(),
