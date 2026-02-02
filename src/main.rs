@@ -107,7 +107,7 @@ impl JsonRpcErrorResponse {
 }
 
 // Helper function to create an Axum Response with JSON-RPC content
-fn create_jsonrpc_response(json_response: serde_json::Value) -> Response {
+fn create_jsonrpc_response(json_response: &serde_json::Value) -> Response {
     Response::builder()
         .status(StatusCode::OK)
         .header(header::CONTENT_TYPE, "application/json")
@@ -127,45 +127,14 @@ async fn mcp_handler(Json(request_value): Json<Value>) -> Response {
         Err(_) => {
             let id = request_value.get("id").cloned().unwrap_or(Value::Null);
             let error = JsonRpcErrorResponse::new(id, -32700, "Parse error".to_string());
-            create_jsonrpc_response(serde_json::to_value(error).unwrap())
+            create_jsonrpc_response(&serde_json::to_value(error).unwrap())
         }
     }
 }
 #[allow(clippy::unused_async)]
 async fn handle_request_with_params(req: JsonRpcRequestWithParams) -> Response {
     match req.method.as_str() {
-        "initialize" => {
-            let params: Result<InitializeParams, _> = serde_json::from_value(req.params);
-            match params {
-                Ok(_params) => {
-                    let response = JsonRpcResponse {
-                        jsonrpc: "2.0".to_string(),
-                        id: req.id,
-                        result: serde_json::json!({
-                            "protocolVersion": "2024-11-05",
-                            "capabilities": {
-                                "tools": {
-                                    "listChanged": false
-                                }
-                            },
-                            "serverInfo": {
-                                "name": "mcp-time-server",
-                                "version": "0.1.0"
-                            }
-                        }),
-                    };
-                    create_jsonrpc_response(serde_json::to_value(response).unwrap())
-                }
-                Err(e) => {
-                    let error = JsonRpcErrorResponse::new(
-                        req.id,
-                        -32602,
-                        format!("Invalid params for initialize: {e}"),
-                    );
-                    create_jsonrpc_response(serde_json::to_value(error).unwrap())
-                }
-            }
-        }
+        "initialize" => process_init(&req),
         "tools/list" => {
             // tools/list can be called with or without params
             let tools = serde_json::json!([
@@ -195,7 +164,7 @@ async fn handle_request_with_params(req: JsonRpcRequestWithParams) -> Response {
                 id: req.id,
                 result: serde_json::json!({ "tools": tools }),
             };
-            create_jsonrpc_response(serde_json::to_value(response).unwrap())
+            create_jsonrpc_response(&serde_json::to_value(response).unwrap())
         }
         "tools/call" => {
             let params: Result<ToolCallParams, _> = serde_json::from_value(req.params);
@@ -216,7 +185,7 @@ async fn handle_request_with_params(req: JsonRpcRequestWithParams) -> Response {
                                 -32602,
                                 "Invalid params: only 'UTC' timezone is supported".to_string(),
                             );
-                            return create_jsonrpc_response(serde_json::to_value(error).unwrap());
+                            return create_jsonrpc_response(&serde_json::to_value(error).unwrap());
                         }
 
                         let now: DateTime<Utc> = Utc::now();
@@ -235,19 +204,19 @@ async fn handle_request_with_params(req: JsonRpcRequestWithParams) -> Response {
                                 "isError": false
                             }),
                         };
-                        create_jsonrpc_response(serde_json::to_value(response).unwrap())
+                        create_jsonrpc_response(&serde_json::to_value(response).unwrap())
                     } else {
                         let error = JsonRpcErrorResponse::new(
                             req.id,
                             -32602,
                             "Invalid params for get_system_time".to_string(),
                         );
-                        create_jsonrpc_response(serde_json::to_value(error).unwrap())
+                        create_jsonrpc_response(&serde_json::to_value(error).unwrap())
                     }
                 } else {
                     let error =
                         JsonRpcErrorResponse::new(req.id, -32601, "Method not found".to_string());
-                    create_jsonrpc_response(serde_json::to_value(error).unwrap())
+                    create_jsonrpc_response(&serde_json::to_value(error).unwrap())
                 }
             } else {
                 let error = JsonRpcErrorResponse::new(
@@ -255,15 +224,49 @@ async fn handle_request_with_params(req: JsonRpcRequestWithParams) -> Response {
                     -32602,
                     "Invalid params for tools/call".to_string(),
                 );
-                create_jsonrpc_response(serde_json::to_value(error).unwrap())
+                create_jsonrpc_response(&serde_json::to_value(error).unwrap())
             }
         }
         _ => {
             let error = JsonRpcErrorResponse::new(req.id, -32601, "Method not found".to_string());
-            create_jsonrpc_response(serde_json::to_value(error).unwrap())
+            create_jsonrpc_response(&serde_json::to_value(error).unwrap())
         }
     }
 }
+
+fn process_init(req: &JsonRpcRequestWithParams) -> Response {
+    let params: Result<InitializeParams, _> = serde_json::from_value(req.params.clone());
+    match params {
+        Ok(_params) => {
+            let response = JsonRpcResponse {
+                jsonrpc: "2.0".to_string(),
+                id: req.id.clone(),
+                result: serde_json::json!({
+                    "protocolVersion": "2024-11-05",
+                    "capabilities": {
+                        "tools": {
+                            "listChanged": false
+                        }
+                    },
+                    "serverInfo": {
+                        "name": "mcp-time-server",
+                        "version": "0.1.0"
+                    }
+                }),
+            };
+            create_jsonrpc_response(&serde_json::to_value(response).unwrap())
+        }
+        Err(e) => {
+            let error = JsonRpcErrorResponse::new(
+                req.id.clone(),
+                -32602,
+                format!("Invalid params for initialize: {e}"),
+            );
+            create_jsonrpc_response(&serde_json::to_value(error).unwrap())
+        }
+    }
+}
+
 #[allow(clippy::unused_async)]
 async fn handle_request_without_params(req: JsonRpcRequestWithoutParams) -> Response {
     if req.method.as_str() == "tools/list" {
@@ -294,10 +297,10 @@ async fn handle_request_without_params(req: JsonRpcRequestWithoutParams) -> Resp
             id: req.id,
             result: serde_json::json!({ "tools": tools }),
         };
-        create_jsonrpc_response(serde_json::to_value(response).unwrap())
+        create_jsonrpc_response(&serde_json::to_value(response).unwrap())
     } else {
         let error = JsonRpcErrorResponse::new(req.id, -32601, "Method not found".to_string());
-        create_jsonrpc_response(serde_json::to_value(error).unwrap())
+        create_jsonrpc_response(&serde_json::to_value(error).unwrap())
     }
 }
 #[allow(clippy::unused_async)]
