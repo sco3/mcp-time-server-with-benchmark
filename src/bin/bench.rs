@@ -211,7 +211,7 @@ fn main() -> std::io::Result<()> {
         if step.bench && !durations.is_empty() {
             let step_total_time = step_start_time.elapsed();
             let total_seconds = step_total_time.as_secs_f64();
-            let rps = num_tasks as f64 / total_seconds;
+            let rps = f64::from(num_tasks) / total_seconds;
 
             let mut sorted_durations = durations.clone(); // Clone for sorting
 
