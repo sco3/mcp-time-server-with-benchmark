@@ -116,7 +116,7 @@ fn create_jsonrpc_response(json_response: serde_json::Value) -> Response {
 }
 
 // --- Axum Handler ---
-
+#[allow(clippy::unused_async)]
 async fn mcp_handler(Json(request_value): Json<Value>) -> Response {
     let request: Result<JsonRpcRequest, _> = serde_json::from_value(request_value.clone());
 
@@ -131,7 +131,7 @@ async fn mcp_handler(Json(request_value): Json<Value>) -> Response {
         }
     }
 }
-
+#[allow(clippy::unused_async)]
 async fn handle_request_with_params(req: JsonRpcRequestWithParams) -> Response {
     match req.method.as_str() {
         "initialize" => {
@@ -210,18 +210,13 @@ async fn handle_request_with_params(req: JsonRpcRequestWithParams) -> Response {
                     let args: Result<ToolArguments, _> =
                         serde_json::from_value(tool_params.arguments);
                     if let Ok(args) = args {
-                        if !args.timezone.is_empty()
-                            && args.timezone.to_uppercase() != "UTC"
-                        {
+                        if !args.timezone.is_empty() && args.timezone.to_uppercase() != "UTC" {
                             let error = JsonRpcErrorResponse::new(
                                 req.id.clone(),
                                 -32602,
-                                "Invalid params: only 'UTC' timezone is supported"
-                                    .to_string(),
+                                "Invalid params: only 'UTC' timezone is supported".to_string(),
                             );
-                            return create_jsonrpc_response(
-                                serde_json::to_value(error).unwrap(),
-                            );
+                            return create_jsonrpc_response(serde_json::to_value(error).unwrap());
                         }
 
                         let now: DateTime<Utc> = Utc::now();
@@ -250,11 +245,8 @@ async fn handle_request_with_params(req: JsonRpcRequestWithParams) -> Response {
                         create_jsonrpc_response(serde_json::to_value(error).unwrap())
                     }
                 } else {
-                    let error = JsonRpcErrorResponse::new(
-                        req.id,
-                        -32601,
-                        "Method not found".to_string(),
-                    );
+                    let error =
+                        JsonRpcErrorResponse::new(req.id, -32601, "Method not found".to_string());
                     create_jsonrpc_response(serde_json::to_value(error).unwrap())
                 }
             } else {
@@ -272,7 +264,7 @@ async fn handle_request_with_params(req: JsonRpcRequestWithParams) -> Response {
         }
     }
 }
-
+#[allow(clippy::unused_async)]
 async fn handle_request_without_params(req: JsonRpcRequestWithoutParams) -> Response {
     if req.method.as_str() == "tools/list" {
         let tools = serde_json::json!([
@@ -308,7 +300,7 @@ async fn handle_request_without_params(req: JsonRpcRequestWithoutParams) -> Resp
         create_jsonrpc_response(serde_json::to_value(error).unwrap())
     }
 }
-
+#[allow(clippy::unused_async)]
 async fn handle_notification(_req: JsonRpcNotification) -> Response {
     // Notifications don't require a response, but we return 200 OK with empty body
     // to satisfy HTTP transport requirements

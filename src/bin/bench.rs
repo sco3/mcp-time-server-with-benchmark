@@ -37,7 +37,7 @@ struct Step {
     name: String,
     bench: bool,
     payload: serde_json::Value,
-    tasks: Option<usize>,
+    tasks: Option<u32>,
 }
 
 #[derive(Debug, Serialize, Deserialize)]
@@ -114,7 +114,7 @@ fn main() -> std::io::Result<()> {
 
     for step in bench_config.steps {
         let mut durations: Vec<f64> = Vec::new();
-        let num_tasks = step.tasks.unwrap_or(1);
+        let num_tasks: u32 = step.tasks.unwrap_or(1);
         let step_start_time = Instant::now();
         for _ in 0..num_tasks {
             let mut payload = step.payload.clone();
