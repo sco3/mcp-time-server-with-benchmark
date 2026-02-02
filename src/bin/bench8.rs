@@ -79,7 +79,7 @@ async fn main() -> anyhow::Result<()> {
         while let Ok(Some(line)) = reader.next_line().await {
             let now = Instant::now();
             if let Ok(response) = serde_json::from_str::<serde_json::Value>(&line) {
-                if let Some(id) = response.get("id").and_then(|i| i.as_u64()) {
+                if let Some(id) = response.get("id").and_then(serde_json::Value::as_u64) {
                     let mut pending = pending_clone.lock().await;
                     if let Some(start) = pending.remove(&id) {
                         let mut lats = latencies_clone.lock().await;
@@ -134,7 +134,7 @@ async fn main() -> anyhow::Result<()> {
 
         let elapsed = step_start.elapsed();
         if step.bench {
-            print_step_stats(&step.name, &*latencies.lock().await, elapsed, step.tasks);
+            print_step_stats(&step.name, &latencies.lock().await, elapsed, step.tasks);
         }
     }
 
@@ -154,7 +154,7 @@ fn print_step_stats(name: &str, latencies: &[Duration], total_time: Duration, ta
 
     let rps = tasks as f64 / total_time.as_secs_f64();
     println!("---");
-    println!("Step '{}' stats:", name);
+    println!("Step '{name}' stats:");
     println!(
         "  Median: {:.3}ms",
         hist.value_at_quantile(0.5) as f64 / 1_000_000.0
@@ -167,6 +167,6 @@ fn print_step_stats(name: &str, latencies: &[Duration], total_time: Duration, ta
         "  P99:    {:.3}ms",
         hist.value_at_quantile(0.99) as f64 / 1_000_000.0
     );
-    println!("  RPS:    {:.2}", rps);
+    println!("  RPS:    {rps:.2}");
     println!("---");
 }

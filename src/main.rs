@@ -160,7 +160,7 @@ async fn handle_request_with_params(req: JsonRpcRequestWithParams) -> Response {
                     let error = JsonRpcErrorResponse::new(
                         req.id,
                         -32602,
-                        format!("Invalid params for initialize: {}", e),
+                        format!("Invalid params for initialize: {e}"),
                     );
                     create_jsonrpc_response(serde_json::to_value(error).unwrap())
                 }
@@ -199,77 +199,71 @@ async fn handle_request_with_params(req: JsonRpcRequestWithParams) -> Response {
         }
         "tools/call" => {
             let params: Result<ToolCallParams, _> = serde_json::from_value(req.params);
-            match params {
-                Ok(tool_params) => {
-                    if tool_params.name == "get_system_time" {
-                        #[derive(Deserialize, Debug)]
-                        struct ToolArguments {
-                            #[serde(default)]
-                            timezone: String,
+            if let Ok(tool_params) = params {
+                if tool_params.name == "get_system_time" {
+                    #[derive(Deserialize, Debug)]
+                    struct ToolArguments {
+                        #[serde(default)]
+                        timezone: String,
+                    }
+
+                    let args: Result<ToolArguments, _> =
+                        serde_json::from_value(tool_params.arguments);
+                    if let Ok(args) = args {
+                        if !args.timezone.is_empty()
+                            && args.timezone.to_uppercase() != "UTC"
+                        {
+                            let error = JsonRpcErrorResponse::new(
+                                req.id.clone(),
+                                -32602,
+                                "Invalid params: only 'UTC' timezone is supported"
+                                    .to_string(),
+                            );
+                            return create_jsonrpc_response(
+                                serde_json::to_value(error).unwrap(),
+                            );
                         }
 
-                        let args: Result<ToolArguments, _> =
-                            serde_json::from_value(tool_params.arguments);
-                        match args {
-                            Ok(args) => {
-                                if !args.timezone.is_empty()
-                                    && args.timezone.to_uppercase() != "UTC"
-                                {
-                                    let error = JsonRpcErrorResponse::new(
-                                        req.id.clone(),
-                                        -32602,
-                                        "Invalid params: only 'UTC' timezone is supported"
-                                            .to_string(),
-                                    );
-                                    return create_jsonrpc_response(
-                                        serde_json::to_value(error).unwrap(),
-                                    );
-                                }
+                        let now: DateTime<Utc> = Utc::now();
+                        let time_str = now.format("%Y-%m-%dT%H:%M:%SZ").to_string();
 
-                                let now: DateTime<Utc> = Utc::now();
-                                let time_str = now.format("%Y-%m-%dT%H:%M:%SZ").to_string();
-
-                                let response = JsonRpcResponse {
-                                    jsonrpc: "2.0".to_string(),
-                                    id: req.id,
-                                    result: serde_json::json!({
-                                        "content": [
-                                            {
-                                                "type": "text",
-                                                "text": time_str
-                                            }
-                                        ],
-                                        "isError": false
-                                    }),
-                                };
-                                create_jsonrpc_response(serde_json::to_value(response).unwrap())
-                            }
-                            Err(_) => {
-                                let error = JsonRpcErrorResponse::new(
-                                    req.id,
-                                    -32602,
-                                    "Invalid params for get_system_time".to_string(),
-                                );
-                                create_jsonrpc_response(serde_json::to_value(error).unwrap())
-                            }
-                        }
+                        let response = JsonRpcResponse {
+                            jsonrpc: "2.0".to_string(),
+                            id: req.id,
+                            result: serde_json::json!({
+                                "content": [
+                                    {
+                                        "type": "text",
+                                        "text": time_str
+                                    }
+                                ],
+                                "isError": false
+                            }),
+                        };
+                        create_jsonrpc_response(serde_json::to_value(response).unwrap())
                     } else {
                         let error = JsonRpcErrorResponse::new(
                             req.id,
-                            -32601,
-                            "Method not found".to_string(),
+                            -32602,
+                            "Invalid params for get_system_time".to_string(),
                         );
                         create_jsonrpc_response(serde_json::to_value(error).unwrap())
                     }
-                }
-                Err(_) => {
+                } else {
                     let error = JsonRpcErrorResponse::new(
                         req.id,
-                        -32602,
-                        "Invalid params for tools/call".to_string(),
+                        -32601,
+                        "Method not found".to_string(),
                     );
                     create_jsonrpc_response(serde_json::to_value(error).unwrap())
                 }
+            } else {
+                let error = JsonRpcErrorResponse::new(
+                    req.id,
+                    -32602,
+                    "Invalid params for tools/call".to_string(),
+                );
+                create_jsonrpc_response(serde_json::to_value(error).unwrap())
             }
         }
         _ => {
@@ -280,41 +274,38 @@ async fn handle_request_with_params(req: JsonRpcRequestWithParams) -> Response {
 }
 
 async fn handle_request_without_params(req: JsonRpcRequestWithoutParams) -> Response {
-    match req.method.as_str() {
-        "tools/list" => {
-            let tools = serde_json::json!([
-                {
-                    "name": "get_system_time",
-                    "description": "Get current system time in specified timezone",
-                    "inputSchema": {
-                        "type": "object",
-                        "properties": {
-                            "timezone": {
-                                "type": "string",
-                                "description": "IANA timezone name (e.g., 'America/New_York', 'Europe/London'). Defaults to UTC"
-                            }
+    if req.method.as_str() == "tools/list" {
+        let tools = serde_json::json!([
+            {
+                "name": "get_system_time",
+                "description": "Get current system time in specified timezone",
+                "inputSchema": {
+                    "type": "object",
+                    "properties": {
+                        "timezone": {
+                            "type": "string",
+                            "description": "IANA timezone name (e.g., 'America/New_York', 'Europe/London'). Defaults to UTC"
                         }
-                    },
-                    "annotations": {
-                        "title": "Get System Time",
-                        "readOnlyHint": true,
-                        "destructiveHint": false,
-                        "idempotentHint": false,
-                        "openWorldHint": false
                     }
+                },
+                "annotations": {
+                    "title": "Get System Time",
+                    "readOnlyHint": true,
+                    "destructiveHint": false,
+                    "idempotentHint": false,
+                    "openWorldHint": false
                 }
-            ]);
-            let response = JsonRpcResponse {
-                jsonrpc: "2.0".to_string(),
-                id: req.id,
-                result: serde_json::json!({ "tools": tools }),
-            };
-            create_jsonrpc_response(serde_json::to_value(response).unwrap())
-        }
-        _ => {
-            let error = JsonRpcErrorResponse::new(req.id, -32601, "Method not found".to_string());
-            create_jsonrpc_response(serde_json::to_value(error).unwrap())
-        }
+            }
+        ]);
+        let response = JsonRpcResponse {
+            jsonrpc: "2.0".to_string(),
+            id: req.id,
+            result: serde_json::json!({ "tools": tools }),
+        };
+        create_jsonrpc_response(serde_json::to_value(response).unwrap())
+    } else {
+        let error = JsonRpcErrorResponse::new(req.id, -32601, "Method not found".to_string());
+        create_jsonrpc_response(serde_json::to_value(error).unwrap())
     }
 }
 
@@ -340,7 +331,7 @@ async fn main() {
 
     // Run our app with hyper on localhost:3000
     let addr = SocketAddr::from(([0, 0, 0, 0], 3000));
-    println!("MCP server listening on {}", addr);
+    println!("MCP server listening on {addr}");
 
     let listener = tokio::net::TcpListener::bind(addr).await.unwrap();
     axum::serve(listener, app).await.unwrap();
