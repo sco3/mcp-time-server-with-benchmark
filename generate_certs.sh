@@ -2,6 +2,11 @@
 
 set -euo pipefail
 
+if ! command -v openssl &>/dev/null; then
+  echo "Error: openssl is not installed. Please install it to generate certificates." >&2
+  exit 1
+fi
+
 echo "Generating private key (key.pem)..."
 openssl genpkey -algorithm RSA -out key.pem
 
