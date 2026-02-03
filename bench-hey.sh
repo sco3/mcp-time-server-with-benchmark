@@ -1,4 +1,4 @@
-hey -n 8000 -c 8 \
+hey -n 500000 -c 8 \
   -m POST \
   -H "Authorization: $AUTH" \
   -T "application/json" \
