@@ -5,10 +5,26 @@ use axum::{
     routing::post,
     Json, Router,
 };
+use axum_server::tls_rustls::RustlsConfig;
 use chrono::{DateTime, Utc};
+use clap::Parser;
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
 use std::net::SocketAddr;
+use std::path::PathBuf;
+
+// --- Clap Argument Parsing ---
+
+#[derive(Parser, Debug)]
+#[command(author, version, about, long_about = None)]
+struct Args {
+    /// Path to the TLS certificate file
+    #[arg(long)]
+    tls_cert: Option<PathBuf>,
+    /// Path to the TLS key file
+    #[arg(long)]
+    tls_key: Option<PathBuf>,
+}
 
 // --- JSON-RPC Request Structures ---
 
@@ -318,6 +334,8 @@ async fn handle_notification(_req: JsonRpcNotification) -> Response {
 
 #[tokio::main]
 async fn main() {
+    let args = Args::parse();
+
     // Build our application with routes for both /mcp and /mcp/
     // This ensures compatibility with wrapper.py which adds trailing slashes
     let app = Router::new()
@@ -326,8 +344,42 @@ async fn main() {
 
     // Run our app with hyper on localhost:3000
     let addr = SocketAddr::from(([0, 0, 0, 0], 3000));
-    println!("MCP server listening on {addr}");
 
-    let listener = tokio::net::TcpListener::bind(addr).await.unwrap();
-    axum::serve(listener, app).await.unwrap();
+    match (args.tls_cert, args.tls_key) {
+        (Some(cert_path), Some(key_path)) => {
+            println!("MCP server listening on https://{addr}");
+            let config = RustlsConfig::from_pem_file(cert_path, key_path)
+                .await
+                .unwrap_or_else(|e| {
+                    eprintln!("[ERROR] Failed to load TLS certificate/key: {e}");
+                    std::process::exit(1);
+                });
+            axum_server::bind_rustls(addr, config)
+                .serve(app.into_make_service())
+                .await
+                .unwrap_or_else(|e| {
+                    eprintln!("[ERROR] Failed to start HTTPS server: {e}");
+                    std::process::exit(1);
+                });
+        }
+        (None, None) => {
+            println!("MCP server listening on http://{addr}");
+            let listener = tokio::net::TcpListener::bind(addr)
+                .await
+                .unwrap_or_else(|e| {
+                    eprintln!("[ERROR] Failed to bind to address {addr}: {e}");
+                    std::process::exit(1);
+                });
+            axum::serve(listener, app).await.unwrap_or_else(|e| {
+                eprintln!("[ERROR] Failed to start HTTP server: {e}");
+                std::process::exit(1);
+            });
+        }
+        _ => {
+            eprintln!(
+                "[ERROR] Both --tls-cert and --tls-key must be provided together to enable TLS."
+            );
+            std::process::exit(1);
+        }
+    }
 }

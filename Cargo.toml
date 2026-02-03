@@ -17,3 +17,6 @@ crossbeam-channel = "0.5"
 statistical = "1.0"
 hdrhistogram = "7"
 anyhow = "1.0.100"
+axum-server = { version = "0.8.0", features = ["tls-rustls"] }
+tokio-rustls = "0.26.4"
+rustls-pemfile = "2.2.0"
