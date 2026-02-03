@@ -345,33 +345,42 @@ async fn main() {
     // Run our app with hyper on localhost:3000
     let addr = SocketAddr::from(([0, 0, 0, 0], 3000));
 
-    if let (Some(cert_path), Some(key_path)) = (args.tls_cert, args.tls_key) {
-        println!("MCP server listening on https://{addr}");
-        let config = match RustlsConfig::from_pem_file(cert_path, key_path).await {
-            Ok(config) => config,
-            Err(e) => {
-                eprintln!("[ERROR] Failed to load TLS certificate/key: {e}");
+    match (args.tls_cert, args.tls_key) {
+        (Some(cert_path), Some(key_path)) => {
+            println!("MCP server listening on https://{addr}");
+            let config = match RustlsConfig::from_pem_file(cert_path, key_path).await {
+                Ok(config) => config,
+                Err(e) => {
+                    eprintln!("[ERROR] Failed to load TLS certificate/key: {e}");
+                    std::process::exit(1);
+                }
+            };
+            if let Err(e) = axum_server::bind_rustls(addr, config)
+                .serve(app.into_make_service())
+                .await
+            {
+                eprintln!("[ERROR] Failed to start HTTPS server: {e}");
                 std::process::exit(1);
             }
-        };
-        if let Err(e) = axum_server::bind_rustls(addr, config)
-            .serve(app.into_make_service())
-            .await
-        {
-            eprintln!("[ERROR] Failed to start HTTPS server: {e}");
-            std::process::exit(1);
         }
-    } else {
-        println!("MCP server listening on http://{addr}");
-        let listener = match tokio::net::TcpListener::bind(addr).await {
-            Ok(listener) => listener,
-            Err(e) => {
-                eprintln!("[ERROR] Failed to bind to address {addr}: {e}");
+        (None, None) => {
+            println!("MCP server listening on http://{addr}");
+            let listener = match tokio::net::TcpListener::bind(addr).await {
+                Ok(listener) => listener,
+                Err(e) => {
+                    eprintln!("[ERROR] Failed to bind to address {addr}: {e}");
+                    std::process::exit(1);
+                }
+            };
+            if let Err(e) = axum::serve(listener, app).await {
+                eprintln!("[ERROR] Failed to start HTTP server: {e}");
                 std::process::exit(1);
             }
-        };
-        if let Err(e) = axum::serve(listener, app).await {
-            eprintln!("[ERROR] Failed to start HTTP server: {e}");
+        }
+        _ => {
+            eprintln!(
+                "[ERROR] Both --tls-cert and --tls-key must be provided together to enable TLS."
+            );
             std::process::exit(1);
         }
     }
