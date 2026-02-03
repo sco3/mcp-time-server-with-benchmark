@@ -8,13 +8,13 @@ use crate::tools::get_tools_description_json;
 
 #[allow(clippy::unused_async)]
 pub async fn mcp_handler(Json(request_value): Json<Value>) -> Response {
-    let request: Result<JsonRpcRequest, _> = serde_json::from_value(request_value.clone());
+    let id = request_value.get("id").cloned().unwrap_or(Value::Null);
+    let request: Result<JsonRpcRequest, _> = serde_json::from_value(request_value);
     match request {
         Ok(JsonRpcRequest::WithParams(req)) => handle_request_with_params(req).await,
         Ok(JsonRpcRequest::WithoutParams(req)) => handle_request_without_params(req).await,
         Ok(JsonRpcRequest::Notification(req)) => handle_notification(req).await,
         Err(_) => {
-            let id = request_value.get("id").cloned().unwrap_or(Value::Null);
             let error = JsonRpcErrorResponse::new(id, -32700, "Parse error".to_string());
             create_jsonrpc_response(&serde_json::to_value(error).unwrap())
         }
