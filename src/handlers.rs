@@ -155,9 +155,18 @@ pub async fn handle_notification(_req: JsonRpcNotification) -> Response {
 
 // Helper function (copy from main.rs):
 pub fn create_jsonrpc_response(json_response: &serde_json::Value) -> Response {
-    Response::builder()
-        .status(StatusCode::OK)
-        .header(header::CONTENT_TYPE, "application/json")
-        .body(Body::from(serde_json::to_string(&json_response).unwrap()))
-        .unwrap()
+    match serde_json::to_string(json_response) {
+        Ok(json_string) => Response::builder()
+            .status(StatusCode::OK)
+            .header(header::CONTENT_TYPE, "application/json")
+            .body(Body::from(json_string))
+            .unwrap_or_else(|_| Response::builder()
+                .status(StatusCode::INTERNAL_SERVER_ERROR)
+                .body(Body::from(r#"{"error":"failed to build response"}"#))
+                .unwrap_or_else(|_| Response::new(Body::from("{\"error\":\"critical failure\"}")))),
+        Err(_) => Response::builder()
+            .status(StatusCode::INTERNAL_SERVER_ERROR)
+            .body(Body::from(r#"{"error":"failed to serialize response"}"#))
+            .unwrap_or_else(|_| Response::new(Body::from("{\"error\":\"critical failure\"}"))),
+    }
 }
