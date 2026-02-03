@@ -147,9 +147,8 @@ pub async fn handle_request_without_params(req: JsonRpcRequestWithoutParams) -> 
 #[allow(clippy::unused_async)]
 pub async fn handle_notification(_req: JsonRpcNotification) -> Response {
     Response::builder()
-        .status(StatusCode::OK)
-        .header(header::CONTENT_TYPE, "application/json")
-        .body(Body::from("{}"))
+        .status(StatusCode::NO_CONTENT)
+        .body(Body::empty())
         .unwrap()
 }
 
