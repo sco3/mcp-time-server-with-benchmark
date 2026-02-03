@@ -8,7 +8,7 @@ auth_header=${AUTH:+-H "Authorization: $AUTH"}
 rewrk \
 	-c 8 \
 	-t 2 \
-	-d 20s \
+	-d 4s \
 	-m POST \
 	-b '{"jsonrpc":"2.0","id":3,"method":"tools/call","params":{"name":"get_system_time","arguments":{"timezone":"UTC"}}}' \
 	-H "content-type: application/json" \
