@@ -349,14 +349,13 @@ async fn main() {
         println!("MCP server listening on https://{addr}");
         let config = RustlsConfig::from_pem_file(cert_path, key_path)
             .await
-            .unwrap();
+            .expect("Failed to load TLS certificate/key");
         axum_server::bind_rustls(addr, config)
             .serve(app.into_make_service())
             .await
-            .unwrap();
+            .expect("Failed to start HTTPS server");
     } else {
         println!("MCP server listening on http://{addr}");
-        let listener = tokio::net::TcpListener::bind(addr).await.unwrap();
-        axum::serve(listener, app).await.unwrap();
-    }
-}
+        let listener = tokio::net::TcpListener::bind(addr).await.expect("Failed to bind to address");
+        axum::serve(listener, app).await.expect("Failed to start HTTP server");
+    }}
