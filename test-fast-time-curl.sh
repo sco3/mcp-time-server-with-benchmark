@@ -5,7 +5,7 @@ set -xueo pipefail
 MCP_CONTEXT_FORGE_DIR=${MCP_CONTEXT_FORGE_DIR:-$HOME/prj/mcp-context-forge}
 MCPGATEWAY_BEARER_TOKEN="$(uv --project "${MCP_CONTEXT_FORGE_DIR}" run -m mcpgateway.utils.create_jwt_token --username admin@example.com --exp 10080 --secret my-test-key 2>/dev/null)"
 
-echo -n $MCPGATEWAY_BEARER_TOKEN >~/.local/mcpgateway-bearer-token.txt
+echo -n "$MCPGATEWAY_BEARER_TOKEN" >~/.local/mcpgateway-bearer-token.txt
 
 URL="http://localhost:3000/mcp"
 
