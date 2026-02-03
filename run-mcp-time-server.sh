@@ -3,4 +3,4 @@
 
 set -xueo pipefail
 
-tmux new-session -d -s mcp-time-server 'cargo run --release --bin mcp-time-server'
+tmux new-session -d -s mcp-time-server 'cargo run --release --bin mcp-time-server -- "$@"'
