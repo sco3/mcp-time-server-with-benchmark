@@ -22,7 +22,7 @@ LIST='{"jsonrpc":"2.0","id":2,"method":"tools/list"}'
 TOOL_CALL='{"jsonrpc":"2.0","id":3,"method":"tools/call","params":{"name":"get_system_time","arguments":{"timezone":"UTC"}}}'
 
 HEADERS=(
-        -k
+        --cacert cert.pem
 	-H "Authorization: Bearer $MCPGATEWAY_BEARER_TOKEN"
 	-H "Content-Type: application/json; charset=utf-8"
 	-H "Accept: application/json, application/x-ndjson, text/event-stream"
