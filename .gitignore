@@ -7,3 +7,4 @@ wrapper.py
 target
 headers.txt
 *.svg
+*.pem
