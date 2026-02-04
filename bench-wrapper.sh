@@ -7,13 +7,11 @@ source ./token-from-file.sh
 #echo $AUTH
 #exit 
 
-time ./target/release/bench8 \
+/usr/bin/time -v ./target/release/bench8 \
 	--silent \
 	--server  $HOME/prj/mcp-stdio-wrapper/target/release/mcp_stdio_wrapper  \
 	--url "http://localhost:3000/mcp/" \
 	--auth "$AUTH" \
-	--log-level error \
-	--log-file bench-wrapper-error.log 
-	
-	
-#5	--log-file bench-wrapper-out.log \
+	--log-level off \
+#	--log-file bench-wrapper-error.log 
+#	--log-file bench-wrapper-out.log \
