@@ -12,8 +12,9 @@ source ./token-from-file.sh
 	--server $HOME/prj/mcp-stdio-wrapper/target/release/mcp_stdio_wrapper  \
 	--url "https://localhost:3000/mcp/" \
 	--auth "$AUTH" \
-	--concurrency 32 \
+	--concurrency 80 \
 	--tls-cert cert.pem \
+	--http2 \
 	--http-pool-per-worker \
 	--http-pool-size 1
 
