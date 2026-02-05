@@ -151,8 +151,8 @@ fn print_step_stats(name: &str, latencies: &[Duration], total_time: Duration, ta
     if latencies.is_empty() {
         return;
     }
-
-    let mut hist = Histogram::<u64>::new_with_bounds(1, 1_000_000_000, 3).unwrap();
+    let mut hist: Histogram<u64> = Histogram::new(3).unwrap();
+    //let mut hist = Histogram::<u64>::new_with_bounds(1, 1_000_000_000, 3).unwrap();
     for lat in latencies {
         hist.record(lat.as_nanos() as u64).unwrap();
     }

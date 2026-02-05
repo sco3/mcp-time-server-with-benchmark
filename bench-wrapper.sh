@@ -6,12 +6,17 @@ source ./token-from-file.sh
 
 #echo $AUTH
 #exit 
+RUST_BACKTRACE=1
 
-/usr/bin/time -v ./target/release/bench \
-	--log-file bench-wrapper-inout.log  \
+/usr/bin/time -v ./target/release/bench8 \
+        --silent \
 	--server $HOME/prj/mcp-stdio-wrapper/target/release/mcp_stdio_wrapper  \
-	--url "https://localhost:3000/mcp/" \
+	--url "http://localhost:3000/mcp/" \
 	--auth "$AUTH" \
-	--log-level error \
-	--tls-cert cert.pem  \
+	--concurrency 150 \
+	--log-level off \
+	
+exit
 	--log-file bench-wrapper.log
+
+#	--log-file bench-wrapper-inout.log  \

@@ -17,6 +17,6 @@ payload = { jsonrpc = "2.0", id = 2, method = "tools/list" }
 [[steps]]
 name = "System Time Call"
 bench = true
-batch = 16
+batch = 80
 tasks = 80000
 payload = { jsonrpc = "2.0", id = 3, method = "tools/call", params = { name = "get_system_time", arguments = { timezone = "UTC" } } }
